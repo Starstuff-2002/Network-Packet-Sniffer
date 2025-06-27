@@ -45,10 +45,12 @@ Click Start Sniffing to capture packets
 
 Click Export CSV to save logs to packet_logs.csv
 
-###Project Files
-File Name	Purpose
-gui.py	Main GUI application for packet sniffing
-run_sniffer_admin.bat	Launches gui.py with admin privileges (Windows only)
-packet_logs.csv	Exported log file containing sniffed packets (auto-generated)
-README.md	Complete documentation and project report
+### Project files
+| File Name               | Purpose                                                       |
+| ----------------------- | ------------------------------------------------------------- |
+| `gui.py`                | Main GUI application for packet sniffing                      |
+| `run_sniffer_admin.bat` | Launches `gui.py` with admin privileges (Windows only)        |
+| `packet_logs.csv`       | Exported log file containing sniffed packets (auto-generated) |
+| `README.md`             | Complete documentation and project report                     |
+
 
