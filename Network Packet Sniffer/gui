@@ -1,0 +1,113 @@
+import flet as ft
+import threading
+import csv
+from scapy.all import sniff, IP, TCP, UDP, ICMP, ARP, DNS
+from scapy.layers.http import HTTPRequest
+
+logs = []
+
+def main(page: ft.Page):
+    page.title = "Network Packet Sniffer"
+    page.theme_mode = "dark"
+    page.scroll = "auto"
+
+    ip_input = ft.TextField(label="IP Filter", width=300)
+    protocol_dropdown = ft.Dropdown(
+        label="Protocol Filter",
+        width=300,
+        value="All",
+        options=[
+            ft.dropdown.Option("All"),
+            ft.dropdown.Option("TCP"),
+            ft.dropdown.Option("UDP"),
+            ft.dropdown.Option("ICMP"),
+            ft.dropdown.Option("ARP"),
+            ft.dropdown.Option("DNS"),
+            ft.dropdown.Option("HTTP"),
+        ],
+    )
+
+    output_area = ft.TextField(
+        multiline=True,
+        label="Sniffed Packets",
+        width=700,
+        height=400,
+        read_only=True,
+        border="outline",
+    )
+
+    def update_output(text):
+        output_area.value += text + "\n"
+        page.update()
+
+    def get_protocol(packet):
+        if HTTPRequest in packet: return "HTTP"
+        if DNS in packet: return "DNS"
+        if ARP in packet: return "ARP"
+        if TCP in packet: return "TCP"
+        if UDP in packet: return "UDP"
+        if ICMP in packet: return "ICMP"
+        if IP in packet: return "IP"
+        return "Other"
+
+    def packet_callback(packet):
+        try:
+            proto = get_protocol(packet)
+            src_ip = dst_ip = ""
+
+            if ARP in packet:
+                src_ip = packet[ARP].psrc
+                dst_ip = packet[ARP].pdst
+            elif IP in packet:
+                src_ip = packet[IP].src
+                dst_ip = packet[IP].dst
+
+            if filter_protocol and proto != filter_protocol:
+                return
+            if filter_ip and (filter_ip not in src_ip and filter_ip not in dst_ip):
+                return
+
+            log = f"{src_ip} → {dst_ip} | Protocol: {proto} | Size: {len(packet)} bytes"
+            update_output(log)
+            logs.append([src_ip, dst_ip, proto, len(packet)])
+        except Exception as e:
+            update_output(f"[ERROR] {e}")
+
+    def sniff_packets():
+        sniff(prn=packet_callback, store=False, count=50)
+
+    def start_sniffing(e):
+        nonlocal filter_ip, filter_protocol
+        filter_ip = ip_input.value.strip()
+        raw_proto = protocol_dropdown.value.strip().upper()
+        filter_protocol = "" if raw_proto == "ALL" else raw_proto
+        output_area.value = f"🔍 Sniffing started...\nIP Filter: {filter_ip or 'All'} | Protocol: {filter_protocol or 'All'}\n"
+        page.update()
+        threading.Thread(target=sniff_packets, daemon=True).start()
+
+    def export_csv(e):
+        if not logs:
+            output_area.value += "⚠️ No logs to export.\n"
+        else:
+            with open("packet_logs.csv", "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Source IP", "Destination IP", "Protocol", "Size"])
+                writer.writerows(logs)
+            output_area.value += "✅ Exported to packet_logs.csv\n"
+        page.update()
+
+    filter_ip = ""
+    filter_protocol = ""
+
+    start_btn = ft.ElevatedButton("Start Sniffing", on_click=start_sniffing)
+    export_btn = ft.ElevatedButton("Export CSV", on_click=export_csv)
+    
+
+    page.add(
+        ft.Column([
+            ft.Row([ip_input, protocol_dropdown, start_btn, export_btn]),
+            output_area
+        ], spacing=20)
+    )
+
+ft.app(target=main)
