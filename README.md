@@ -52,5 +52,4 @@ Click Export CSV to save logs to packet_logs.csv
 | `run_sniffer_admin.bat` | Launches `gui.py` with admin privileges (Windows only)        |
 | `packet_logs.csv`       | Exported log file containing sniffed packets (auto-generated) |
 | `README.md`             | Complete documentation and project report                     |
-
-
+| `alert logs`            | Documentation of alerts generated when packet flooding happens|
